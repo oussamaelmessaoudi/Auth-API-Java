@@ -44,11 +44,6 @@ public class User {
     @Column(nullable = false)
     @JsonIgnore // To prevent accidental leaks of password in APIs
     @NotBlank(message = "Password cannot be blank")
-    @Size(min = 8, max = 15, message = "Password must be between 8 and 15 characters")
-    @Pattern(
-            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,15}$",
-            message = "Password must include uppercase, lowercase, number, special character, and be 8–15 characters long"
-    )
     private String password;
 
     @ElementCollection(fetch = FetchType.EAGER)
