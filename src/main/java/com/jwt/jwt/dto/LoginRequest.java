@@ -16,9 +16,6 @@ public class LoginRequest {
     message = "{login.username.pattern}")
     private String username;
     @NotBlank(message = "{login.password.blank}")
-    @Size(min=5, max= 15,message = "{login.password.size}")
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{5,15}$",
-    message = "{login.password.pattern}")
     private String password;
 
 }
