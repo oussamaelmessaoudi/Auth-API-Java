@@ -1,0 +1,141 @@
+package com.jwt.jwt.controller;
+
+import com.jwt.jwt.dto.AuthResponse;
+import com.jwt.jwt.dto.LoginRequest;
+import com.jwt.jwt.dto.RefreshRequest;
+import com.jwt.jwt.dto.RegisterRequest;
+import com.jwt.jwt.enumeration.Role;
+import com.jwt.jwt.repository.UserRepository;
+import com.jwt.jwt.util.JwtUtils;
+import io.jsonwebtoken.Claims;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import com.jwt.jwt.entity.User;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.time.ZoneId;
+import java.util.UUID;
+import java.util.logging.Logger;
+
+@Slf4j
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final UserRepository userRepository;
+    private final AuthenticationManager authenticationManager;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtUtils jwtUtils;
+    private final UserDetailsService userDetailsService;
+
+    @Operation(summary = "Register a new user")
+    @PostMapping("/register")
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request){
+        log.info("New registration attempt : username={}, email={}", request.getUsername(), request.getEmail());
+        if(userRepository.existsByUsernameOrEmail(request.getUsername(),request.getEmail())){
+            log.warn("Username or Email already in use");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Username or email is already in use");
+        }
+
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.addRole(Role.valueOf(request.getRole()));
+        userRepository.save(user);
+        log.info("New registration attempt succeeded");
+        return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully!");
+    }
+
+    @Operation(summary = "login and receive access/refresh token")
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request){
+        log.info("New logn attempt : username ={}",request.getUsername());
+
+        try{
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getUsername(),request.getPassword())
+            );
+
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            User user = userRepository.findByUsername(userDetails.getUsername())
+                    .orElseThrow(() -> new UsernameNotFoundException("Username not found"));
+            String accessToken = jwtUtils.generateToken(user);
+            String refreshToken = jwtUtils.generateRefreshToken(userDetails);
+
+            Claims claims = jwtUtils.extractAllClaims(accessToken);
+            log.info("New login attempt succeeded");
+            return ResponseEntity.ok(AuthResponse.builder()
+                    .token(accessToken)
+                    .refreshToken(refreshToken)
+                    .username(userDetails.getUsername())
+                    .email(claims.get("email", String.class))
+                    .userId(UUID.fromString(claims.getId()))
+                    .expiresAt(claims.getExpiration().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
+                    .issuedAt(claims.getIssuedAt().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
+                    .expiresIn((claims.getExpiration().getTime() - claims.getIssuedAt().getTime())/ 1000)
+                    .build()
+            );
+        }catch (Exception e){
+            log.warn("Login attempt failed : username = {}, cause = {}", request.getUsername(), e.getMessage());
+            throw e;
+        }
+
+
+    }
+
+    @Operation(summary = "Refresh access token using refresh token")
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshRequest refreshRequest){
+        String refreshToken = refreshRequest.getRefreshToken();
+        String username = jwtUtils.extractUsername(refreshToken);
+        log.info("Refresh token attempt for user : {}",username);
+        try{
+
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            User user = userRepository.findByUsername(userDetails.getUsername())
+                    .orElseThrow(() -> new UsernameNotFoundException("Username not found !"));
+
+            if(jwtUtils.isTokenValid(refreshToken, userDetails)){
+                log.info("Refresh attempt succeeded, Issuing new token for user : {}",username);
+                String newAccessToken = jwtUtils.generateToken(user);
+                String newRefreshToken = jwtUtils.generateRefreshToken(userDetails);
+                Claims claims = jwtUtils.extractAllClaims(newAccessToken);
+
+                return ResponseEntity.ok(AuthResponse.builder()
+                        .token(newAccessToken)
+                        .refreshToken(newRefreshToken)
+                        .username(userDetails.getUsername())
+                        .email(claims.get("email", String.class))
+                        .userId(UUID.fromString(claims.getId()))
+                        .expiresAt(claims.getExpiration().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
+                        .issuedAt(claims.getIssuedAt().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
+                        .expiresIn((claims.getExpiration().getTime() - claims.getIssuedAt().getTime())/ 1000)
+                        .build()
+                );
+            }else{
+                log.warn("Refresh attempt failed : username = {}", username);
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+        }catch (Exception e){
+            log.warn("Refresh attempt failed : username = {}, cause = {}", username, e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+    }
+
+}
