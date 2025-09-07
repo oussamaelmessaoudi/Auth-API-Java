@@ -6,6 +6,7 @@ import com.jwt.jwt.dto.RefreshRequest;
 import com.jwt.jwt.dto.RegisterRequest;
 import com.jwt.jwt.enumeration.Role;
 import com.jwt.jwt.repository.UserRepository;
+import com.jwt.jwt.service.RefreshTokenService;
 import com.jwt.jwt.util.JwtUtils;
 import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -42,6 +44,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final UserDetailsService userDetailsService;
+    private final RefreshTokenService refreshTokenService;
 
     @Operation(summary = "Register a new user")
     @PostMapping("/register")
@@ -111,10 +114,13 @@ public class AuthController {
             User user = userRepository.findByUsername(userDetails.getUsername())
                     .orElseThrow(() -> new UsernameNotFoundException("Username not found !"));
 
-            if(jwtUtils.isTokenValid(refreshToken, userDetails)){
+            if(jwtUtils.isTokenValid(refreshToken, userDetails) && refreshTokenService.isValid(refreshToken)){
                 log.info("Refresh attempt succeeded, Issuing new token for user : {}",username);
                 String newAccessToken = jwtUtils.generateToken(user);
                 String newRefreshToken = jwtUtils.generateRefreshToken(userDetails);
+
+                refreshTokenService.createRefreshToken(user,newRefreshToken, LocalDateTime.now().plusDays(7));
+
                 Claims claims = jwtUtils.extractAllClaims(newAccessToken);
 
                 return ResponseEntity.ok(AuthResponse.builder()
