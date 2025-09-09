@@ -3,6 +3,7 @@ package com.jwt.jwt.service;
 
 import com.jwt.jwt.entity.LoginAttempt;
 import com.jwt.jwt.enumeration.Role;
+import com.jwt.jwt.exception.ReachedLimitAttemptsException;
 import com.jwt.jwt.repository.LoginAttemptRepository;
 import com.jwt.jwt.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -51,6 +53,9 @@ public class CustomDetailsService implements UserDetailsService {
     }
 
     public void incrementAttempts(String username){
+        if(username == null || username.trim().isEmpty()){
+            throw new IllegalArgumentException("Username mustn't be null or empty!");
+        }
         LoginAttempt loginAttempt = loginAttemptRepository.findByUsername(username)
                 .orElse(LoginAttempt.builder()
                         .username(username)
@@ -62,11 +67,13 @@ public class CustomDetailsService implements UserDetailsService {
         loginAttempt.setAttempts(updatedAttempts);
         loginAttempt.setLastAttempt(LocalDateTime.now());
 
-        if(updatedAttempts >= 5){
+        if(updatedAttempts == 5){
             loginAttempt.setLockedUntil(LocalDateTime.now().plusMinutes(5));
+            loginAttemptRepository.save(loginAttempt);
+            throw new ReachedLimitAttemptsException(username);
         }
-
-        loginAttemptRepository.save(loginAttempt);
+        if(updatedAttempts < 5)
+            loginAttemptRepository.save(loginAttempt);
     }
 
     public void resetAttempts(String username){
@@ -76,6 +83,30 @@ public class CustomDetailsService implements UserDetailsService {
                     attempt.setLockedUntil(null);
                     loginAttemptRepository.save(attempt);
                 });
+    }
+
+    public void validateLoginAttempt(String username){
+        LoginAttempt loginAttempt = loginAttemptRepository.findByUsername(username)
+                .orElse(LoginAttempt.builder()
+                        .username(username)
+                        .attempts(0)
+                        .lockedUntil(null)
+                        .lastAttempt(LocalDateTime.now())
+                        .build());
+        if(loginAttempt.getLockedUntil() != null && loginAttempt.getLockedUntil().isAfter(LocalDateTime.now())){
+            throw new ReachedLimitAttemptsException(username);
+        }else if(loginAttempt.getLockedUntil() != null && loginAttempt.getLockedUntil().isBefore(LocalDateTime.now())){
+
+            loginAttemptRepository.delete(loginAttempt);
+        }
+    }
+
+    public void clearExpiredLockedUntil(){
+        List<LoginAttempt> expired = loginAttemptRepository.findAll()
+                .stream()
+                .filter(attempt -> attempt.getLockedUntil() != null && attempt.getLockedUntil().isBefore(LocalDateTime.now()))
+                .toList();
+        loginAttemptRepository.deleteAll(expired);
     }
 
 

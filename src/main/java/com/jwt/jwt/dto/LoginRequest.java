@@ -8,7 +8,6 @@ import lombok.*;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-@ValidLoginAttempts
 public class LoginRequest {
     @NotBlank(message="{login.username.blank}")
     @Size(min=5, max=12 ,message = "{login.username.size}")

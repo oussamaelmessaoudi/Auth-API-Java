@@ -5,7 +5,9 @@ import com.jwt.jwt.dto.LoginRequest;
 import com.jwt.jwt.dto.RefreshRequest;
 import com.jwt.jwt.dto.RegisterRequest;
 import com.jwt.jwt.enumeration.Role;
+import com.jwt.jwt.repository.LoginAttemptRepository;
 import com.jwt.jwt.repository.UserRepository;
+import com.jwt.jwt.service.CustomDetailsService;
 import com.jwt.jwt.service.RefreshTokenService;
 import com.jwt.jwt.util.JwtUtils;
 import io.jsonwebtoken.Claims;
@@ -27,11 +29,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.WebRequest;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
-import java.util.logging.Logger;
 
 @Slf4j
 @RestController
@@ -45,6 +47,7 @@ public class AuthController {
     private final JwtUtils jwtUtils;
     private final UserDetailsService userDetailsService;
     private final RefreshTokenService refreshTokenService;
+    private final CustomDetailsService customDetailsService;
 
     @Operation(summary = "Register a new user")
     @PostMapping("/register")
@@ -67,39 +70,34 @@ public class AuthController {
 
     @Operation(summary = "login and receive access/refresh token")
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request){
-        log.info("New logn attempt : username ={}",request.getUsername());
+    public ResponseEntity<String> login(@Valid @RequestBody LoginRequest request, WebRequest webRequest){
+        webRequest.setAttribute("username",request.getUsername(),WebRequest.SCOPE_SESSION);
+        log.info("New login attempt : username ={}",request.getUsername());
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getUsername(),request.getPassword())
+        );
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("Username not found"));
 
-        try{
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getUsername(),request.getPassword())
-            );
-
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            User user = userRepository.findByUsername(userDetails.getUsername())
-                    .orElseThrow(() -> new UsernameNotFoundException("Username not found"));
-            String accessToken = jwtUtils.generateToken(user);
-            String refreshToken = jwtUtils.generateRefreshToken(userDetails);
-
-            Claims claims = jwtUtils.extractAllClaims(accessToken);
-            log.info("New login attempt succeeded");
-            return ResponseEntity.ok(AuthResponse.builder()
-                    .token(accessToken)
-                    .refreshToken(refreshToken)
-                    .username(userDetails.getUsername())
-                    .email(claims.get("email", String.class))
-                    .userId(UUID.fromString(claims.getId()))
-                    .expiresAt(claims.getExpiration().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
-                    .issuedAt(claims.getIssuedAt().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
-                    .expiresIn((claims.getExpiration().getTime() - claims.getIssuedAt().getTime())/ 1000)
-                    .build()
-            );
-        }catch (Exception e){
-            log.warn("Login attempt failed : username = {}, cause = {}", request.getUsername(), e.getMessage());
-            throw e;
-        }
-
-
+        customDetailsService.clearExpiredLockedUntil();
+        customDetailsService.validateLoginAttempt(request.getUsername());
+        String accessToken = jwtUtils.generateToken(user);
+        String refreshToken = jwtUtils.generateRefreshToken(userDetails);
+        Claims claims = jwtUtils.extractAllClaims(accessToken);
+        log.info("New login attempt succeeded");
+        customDetailsService.resetAttempts(request.getUsername());
+        AuthResponse.builder()
+                .token(accessToken)
+                .refreshToken(refreshToken)
+                .username(userDetails.getUsername())
+                .email(claims.get("email", String.class))
+                .userId(UUID.fromString(claims.getId()))
+                .expiresAt(claims.getExpiration().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
+                .issuedAt(claims.getIssuedAt().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
+                .expiresIn((claims.getExpiration().getTime() - claims.getIssuedAt().getTime())/ 1000)
+                .build();
+        return ResponseEntity.status(HttpStatus.OK).body("User Logged in successfully!");
     }
 
     @Operation(summary = "Refresh access token using refresh token")

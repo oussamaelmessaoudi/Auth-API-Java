@@ -29,7 +29,7 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // setting the session management stateless
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("api/auth/**",
+                        .requestMatchers("/api/auth/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html").permitAll()
@@ -48,16 +48,11 @@ public class SecurityConfig {
     //Authentication user credentials during login
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception{
-        try{
-            return authenticationConfiguration.getAuthenticationManager();
-        }catch (Exception e) {
-            throw new RuntimeException("Couldn't create AuthenticationManager");
-        }
+        return authenticationConfiguration.getAuthenticationManager();
     }
 
     //Loads user data from database for auth
     @Bean
-    @SuppressWarnings("deprecated")
     public DaoAuthenticationProvider authenticationProvider(){
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
