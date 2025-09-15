@@ -11,7 +11,7 @@ Designed for production authentication with a clear separation of concerns.
 ** Will complete featuers later on** 
 
 ## Project Structure
-
+```text
 src/
 ├── main/
 │ ├── java/com/jwt/jwt/
@@ -53,7 +53,7 @@ src/
 │ │ └── JwtApplicationTests.java
 │ └── resources/
 │ └── application-test.properties
-
+```
 
 ## Setup 
 ```bash
@@ -61,6 +61,7 @@ git clone https://github.com/oussamaelmessaoudi/Auth-API-Java
 cd Auth-API-Java
 cp .env.example .env
 docker-compose up --build
+```
 
 ## Access Points
 - **App;** http://localhost:8080
