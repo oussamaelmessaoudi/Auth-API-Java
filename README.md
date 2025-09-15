@@ -32,26 +32,6 @@ src/
 │ ├── java/com/jwt/jwt/
 │ │ └── JwtApplicationTests.java
 │ └── resources/
-│ └── application-test.propertiessrc/
-├── main/
-│ ├── java/com/jwt/jwt/
-│ │ ├── config/ # Security config, Swagger setup
-│ │ ├── controller/ # Auth endpoints (login, register, refresh)
-│ │ ├── dto/ # Request/response payloads
-│ │ ├── entity/ # User, RefreshToken, LoginAttempt
-│ │ ├── enumeration/ # Role definitions
-│ │ ├── exception/ # Global exception handling
-│ │ ├── repository/ # JPA repositories
-│ │ ├── service/ # Business logic (auth, token, login tracking)
-│ │ ├── util/ # JWT utilities, claim extraction
-│ │ ├── validation/ # Custom validators and cooldown logic
-│ │ └── JwtApplication.java
-│ └── resources/
-│ └── application.properties
-├── test/
-│ ├── java/com/jwt/jwt/
-│ │ └── JwtApplicationTests.java
-│ └── resources/
 │ └── application-test.properties
 ```
 
