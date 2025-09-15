@@ -19,9 +19,6 @@ target/
 *.iml
 *.ipr
 
-### Sesitive Config Files
-src/main/resources/application.properties
-
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
@@ -34,3 +31,12 @@ build/
 
 ### VS Code ###
 .vscode/
+## Docker ##
+*.pid
+*.d
+pgdata/
+pgadmin_data/
+
+## Spring Boot #
+.env
+src/test/resources/application-test.properties

@@ -1,0 +1,53 @@
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: jwt_postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL","pg_isready -U jwt_user -d jwt_auth_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jwt_net
+    env_file:
+      - .env
+  app:
+    build: .
+    container_name: jwt_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    networks:
+      - jwt_net
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: jwt_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - jwt_net
+
+volumes:
+  pgdata:
+  pgadmin_data:
+
+networks:
+  jwt_net:
+    driver: bridge
