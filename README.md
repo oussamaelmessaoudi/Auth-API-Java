@@ -1,4 +1,4 @@
-# JWT Authentication Backend (Spring Boot)
+# JWT Authentication Backend (Spring Boot/ Spring Security)
 
 A modular backend build with Spring boot, JWT, Docker, PostgreSQL.
 It includes brute-force protection, refresh token rotation, and  swagger API docs.
@@ -65,7 +65,7 @@ docker-compose up --build
 
 ## Access Points
 - **App;** http://localhost:8080
-- **Swagger UI:** htpt;//localhost:8080/swagger-ui/index.html
+- **Swagger UI:** http://localhost:8080/swagger-ui/index.html
 - **pgAdmin:** http://localhost:5050
 
 ## Testing
@@ -74,3 +74,5 @@ docker-compose up --build
 ```
 
 Uses H2 in-memory DB with @ActiveProfiles("test")
+
+***Currently working on email verification
