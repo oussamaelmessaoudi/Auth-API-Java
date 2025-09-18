@@ -5,10 +5,17 @@ It includes brute-force protection, refresh token rotation, and  swagger API doc
 Designed for production authentication with a clear separation of concerns.
 
 ## Core Features :
-- **JWT Authentication** - Stateless login with access and refresh tokens, claim extraction and token rotation.
-- **Refresh Token Management** - Secure storage, validation, and revocation through 'RefreshTokenService"
+- **JWT Authentication:** Stateless login with access and refresh tokens, claim extraction and token rotation.
+- **Refresh Token Management:** Secure storage, validation, and revocation through `RefreshTokenService`.
+- **Brute Force Protection:** Preventing brute force attacks by tracking login attempts, applies cooldown and sends violation messages.
+- **H2-Based Unit Testing:** Uses an in-memory DB for reliable and fast tests.
+- **Dockerized Stack:** PostgreSQL, pgAdmin GUI and Spring Boot app with docker compose.
+- **Swagger UI:** Interactive API docs with endpoint details.
+- **Global Exceptions Handling:** Central error handling with custom responses and validation feedback.
+- **Email Verification an renewing token:** Sending verification email to new registred account with tracking expiry date of each token and possibilty of renewing the token after expiration.
+- **CI Pipeline with GitHub Actions:** Automated tests on every push to `main`.
+- **Environment Isolation:** `.env` config injection using dotenv, `.gitignore` hygiene.
 
-** Will complete featuers later on** 
 
 ## Project Structure
 ```text
