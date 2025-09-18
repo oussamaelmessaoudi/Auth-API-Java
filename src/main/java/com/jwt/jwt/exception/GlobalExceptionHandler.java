@@ -70,6 +70,30 @@ public class GlobalExceptionHandler {
 //        return buildError("Unexpected Error",HttpStatus.INTERNAL_SERVER_ERROR);
 //    }
 
+    @ExceptionHandler(InvalidTokenException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidToken(InvalidTokenException ex){
+        return buildError("Invalid Token !",HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(TokenExpiredException.class)
+    public ResponseEntity<ErrorResponse> handleTokenExpired(TokenExpiredException ex){
+        if(TokenExpiredException.Reason.EXPIRED.equals(ex.getReason())){
+            return buildError("Token Expired",HttpStatus.UNAUTHORIZED);
+        }
+        return buildError("Token isn't expired yet",HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(UserNotVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotVerified(UserNotVerifiedException ex){
+        return buildError("This user isn't verified", HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(UserAlreadyVerifiedException.class)
+
+    public ResponseEntity<ErrorResponse> handleUserAlreadyVerified(UserAlreadyVerifiedException ex){
+        return buildError("This user is already verified", HttpStatus.UNAUTHORIZED);
+    }
+
     public ResponseEntity<ErrorResponse> buildError(String message, HttpStatus status){
         return ResponseEntity.status(status).body(new ErrorResponse(message, status.value(), LocalDateTime.now()));
     }

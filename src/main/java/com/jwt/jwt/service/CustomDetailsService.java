@@ -23,10 +23,8 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class CustomDetailsService implements UserDetailsService {
-    @Autowired
     private final UserRepository userRepository;
 
-    @Autowired
     private final LoginAttemptRepository loginAttemptRepository;
 
     @Override

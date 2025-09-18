@@ -58,11 +58,21 @@ public class User {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    @Column(nullable=false)
+    private boolean enabled=true;
     public Set<Role> getRoles() {
         return Collections.unmodifiableSet(roles);
     }
 
     public void addRole(Role role){
         this.roles.add(role);
+    }
+
+    @PrePersist
+    public void assignDefaultRole(){
+        this.enabled = false;
+        if(roles.isEmpty()){
+            roles.add(Role.USER);
+        }
     }
 }

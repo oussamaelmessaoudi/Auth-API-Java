@@ -4,12 +4,16 @@ import com.jwt.jwt.dto.AuthResponse;
 import com.jwt.jwt.dto.LoginRequest;
 import com.jwt.jwt.dto.RefreshRequest;
 import com.jwt.jwt.dto.RegisterRequest;
+import com.jwt.jwt.entity.VerificationToken;
 import com.jwt.jwt.enumeration.Role;
-import com.jwt.jwt.repository.LoginAttemptRepository;
 import com.jwt.jwt.repository.UserRepository;
+import com.jwt.jwt.repository.VerificationTokenRepository;
 import com.jwt.jwt.service.CustomDetailsService;
+import com.jwt.jwt.service.EmailService;
 import com.jwt.jwt.service.RefreshTokenService;
+import com.jwt.jwt.service.VerificationService;
 import com.jwt.jwt.util.JwtUtils;
+import com.jwt.jwt.util.VerificationTokenGenerator;
 import io.jsonwebtoken.Claims;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -25,10 +29,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.WebRequest;
 
 import java.time.LocalDateTime;
@@ -48,6 +49,9 @@ public class AuthController {
     private final UserDetailsService userDetailsService;
     private final RefreshTokenService refreshTokenService;
     private final CustomDetailsService customDetailsService;
+    private final VerificationService verificationService;
+    private final VerificationTokenRepository verificationTokenRepository;
+    private final EmailService emailService;
 
     @Operation(summary = "Register a new user")
     @PostMapping("/register")
@@ -64,6 +68,14 @@ public class AuthController {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.addRole(Role.valueOf(request.getRole()));
         userRepository.save(user);
+        String verificationToken = VerificationTokenGenerator.generateVerificationToken();
+        VerificationToken vt = new VerificationToken();
+        vt.setToken(verificationToken);
+        vt.setUser(user);
+        vt.setExpiryDate(LocalDateTime.now().plusMinutes(10));
+        verificationTokenRepository.save(vt);
+        emailService.sendVerificationEmail(user,verificationToken);
+
         log.info("New registration attempt succeeded");
         return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully!");
     }
@@ -82,6 +94,7 @@ public class AuthController {
 
         customDetailsService.clearExpiredLockedUntil();
         customDetailsService.validateLoginAttempt(request.getUsername());
+        verificationService.isValidUser(request.getUsername());
         String accessToken = jwtUtils.generateToken(user);
         String refreshToken = jwtUtils.generateRefreshToken(userDetails);
         Claims claims = jwtUtils.extractAllClaims(accessToken);
@@ -141,5 +154,6 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
     }
+
 
 }
