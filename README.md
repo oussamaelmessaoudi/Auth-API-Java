@@ -62,4 +62,20 @@ docker-compose up --build
 
 Uses H2 in-memory DB with @ActiveProfiles("test")
 
-***Currently working on email verification
+## Contributing
+Pull requests are welcome.
+For major changes, open an issue first to discuss what you'd like to change.
+Please make sure tests pass before submitting.
+
+## Author
+Created and maintained by **Oussama ELMESSAOUDI**.
+Feel free to reach out on [GitHub](https://github.com/oussamaelmessaoudi) for questions or suggestions.
+
+Check out my Medium article for a deeper look at Spring Security architecture or Implementing JWT authentication:
+[Spring Security Architecture](https://medium.com/@oussamaelmessaoudi17)
+[Implementing JWT Authentication](https://medium.com/@oussamaelmessaoudi17)
+
+## License 
+This project is licensed under the MIT License.
+See the [LICENSE](LICENSE) file for more details.
+
