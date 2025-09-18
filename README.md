@@ -55,6 +55,29 @@ docker-compose up --build
 - **Swagger UI:** http://localhost:8080/swagger-ui/index.html
 - **pgAdmin:** http://localhost:5050
 
+## API Endpoints
+
+| Method | Endpoint                  | Description |
+|--------|---------------------------|-------------|
+| POST   | `/api/auth/register`      | Register a new user |
+| POST   | `/api/auth/login`         | Login and get access & refresh tokens |
+| POST   | `/api/auth/refresh`       | Refresh access token using a valid refresh token |
+| GET    | `/api/verify`             | Activates accounts if token is valid and not expired (requires Token) |
+| POST   | `/api/renew`              | Renew verification token in case of expiration |
+
+
+## Example Requests 
+
+
+**Login**
+```json
+POST /api/aut/login
+{
+   "username":"test1",
+   "password":"password@123"
+}
+```
+
 ## Testing
 ```bash
 ./mvnw test
@@ -69,13 +92,17 @@ Please make sure tests pass before submitting.
 
 ## Author
 Created and maintained by **Oussama ELMESSAOUDI**.
+
 Feel free to reach out on [GitHub](https://github.com/oussamaelmessaoudi) for questions or suggestions.
 
 Check out my Medium article for a deeper look at Spring Security architecture or Implementing JWT authentication:
+
 [Spring Security Architecture](https://medium.com/@oussamaelmessaoudi17)
+
 [Implementing JWT Authentication](https://medium.com/@oussamaelmessaoudi17)
 
 ## License 
 This project is licensed under the MIT License.
+
 See the [LICENSE](LICENSE) file for more details.
 
