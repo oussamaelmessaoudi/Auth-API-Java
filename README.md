@@ -86,8 +86,11 @@ POST /api/aut/login
 Uses H2 in-memory DB with @ActiveProfiles("test")
 
 ## Contributing
+
 Pull requests are welcome.
+
 For major changes, open an issue first to discuss what you'd like to change.
+
 Please make sure tests pass before submitting.
 
 ## Author
